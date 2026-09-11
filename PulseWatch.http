@@ -1,0 +1,12 @@
+@PulseWatch_HostAddress = https://localhost:7282
+
+POST {{PulseWatch_HostAddress}}/api/websites
+Content-Type: application/json
+
+{
+  "name": "My Portfolio",
+  "url": "https://cordukfurkanemre.com",
+  "ipAddress": null,
+  "isActive": true,
+  "createdUtc": "2026-09-11T06:00:00Z"
+}
