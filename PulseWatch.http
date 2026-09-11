@@ -4,9 +4,25 @@ POST {{PulseWatch_HostAddress}}/api/websites
 Content-Type: application/json
 
 {
-  "name": "My Portfolio",
-  "url": "https://cordukfurkanemre.com",
+  "name": "Delete Test",
+  "url": "https://example.com",
   "ipAddress": null,
   "isActive": true,
   "createdUtc": "2026-09-11T06:00:00Z"
 }
+
+###
+
+PUT https://localhost:7282/api/websites/1
+Content-Type: application/json
+
+{
+  "name": "My Portfolio Updated",
+  "url": "https://cordukfurkanemre.com",
+  "ipAddress": null,
+  "isActive": false
+}
+
+###
+
+DELETE {{PulseWatch_HostAddress}}/api/websites/1
