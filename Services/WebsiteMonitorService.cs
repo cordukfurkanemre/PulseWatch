@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.EntityFrameworkCore;
 using PulseWatch.Data;
 using PulseWatch.Models;
 
@@ -42,6 +43,19 @@ namespace PulseWatch.Services
                 };
 
                 _context.HealthChecks.Add(healthCheck);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    await OpenIncidentIfNeeded(
+                        website.Id,
+                        $"HTTP {(int)response.StatusCode}"
+                    );
+                }
+                else
+                {
+                    await ResolveIncidentIfNeeded(website.Id);
+                }
+
                 await _context.SaveChangesAsync();
 
                 return healthCheck;
@@ -60,10 +74,55 @@ namespace PulseWatch.Services
                 };
 
                 _context.HealthChecks.Add(healthCheck);
+
+                await OpenIncidentIfNeeded(
+                    website.Id,
+                    "Connection failed"
+                );
+
                 await _context.SaveChangesAsync();
 
                 return healthCheck;
             }
+        }
+
+        private async Task OpenIncidentIfNeeded(int websiteId, string reason)
+        {
+            var openIncident = await _context.Incidents
+                .FirstOrDefaultAsync(x =>
+                    x.WebsiteId == websiteId &&
+                    !x.IsResolved);
+
+            if (openIncident != null)
+            {
+                return;
+            }
+
+            var incident = new Incident
+            {
+                WebsiteId = websiteId,
+                StartedAtUtc = DateTime.UtcNow,
+                Reason = reason,
+                IsResolved = false
+            };
+
+            _context.Incidents.Add(incident);
+        }
+
+        private async Task ResolveIncidentIfNeeded(int websiteId)
+        {
+            var openIncident = await _context.Incidents
+                .FirstOrDefaultAsync(x =>
+                    x.WebsiteId == websiteId &&
+                    !x.IsResolved);
+
+            if (openIncident == null)
+            {
+                return;
+            }
+
+            openIncident.IsResolved = true;
+            openIncident.ResolvedAtUtc = DateTime.UtcNow;
         }
     }
 }
