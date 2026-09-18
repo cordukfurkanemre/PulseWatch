@@ -9,16 +9,23 @@ namespace PulseWatch.Services
     {
         private readonly HttpClient _httpClient;
         private readonly AppDbContext _context;
+        private readonly ILogger<WebsiteMonitorService> _logger;
 
-        public WebsiteMonitorService(HttpClient httpClient, AppDbContext context)
+        public WebsiteMonitorService(
+            HttpClient httpClient,
+            AppDbContext context,
+            ILogger<WebsiteMonitorService> logger)
         {
             _httpClient = httpClient;
             _context = context;
+            _logger = logger;
         }
 
-        public async Task<HealthCheck?> CheckWebsiteAsync(int websiteId)
+        public async Task<HealthCheck?> CheckWebsiteAsync(
+            int websiteId,
+            CancellationToken cancellationToken = default)
         {
-            var website = await _context.Websites.FindAsync(websiteId);
+            var website = await _context.Websites.FindAsync([websiteId], cancellationToken);
 
             if (website == null)
             {
@@ -29,7 +36,10 @@ namespace PulseWatch.Services
 
             try
             {
-                var response = await _httpClient.GetAsync(website.Url);
+                using var response = await _httpClient.GetAsync(
+                    website.Url,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    cancellationToken);
 
                 stopwatch.Stop();
 
@@ -56,13 +66,22 @@ namespace PulseWatch.Services
                     await ResolveIncidentIfNeeded(website.Id);
                 }
 
-                await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync(cancellationToken);
 
                 return healthCheck;
             }
-            catch
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception exception)
             {
                 stopwatch.Stop();
+
+                _logger.LogWarning(
+                    exception,
+                    "{Website} kontrol edilirken bağlantı hatası oluştu.",
+                    website.Name);
 
                 var healthCheck = new HealthCheck
                 {
@@ -80,7 +99,7 @@ namespace PulseWatch.Services
                     "Connection failed"
                 );
 
-                await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync(cancellationToken);
 
                 return healthCheck;
             }

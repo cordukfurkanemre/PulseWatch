@@ -5,7 +5,10 @@ using PulseWatch.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddHttpClient<WebsiteMonitorService>();
+builder.Services.AddHttpClient<WebsiteMonitorService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(15);
+});
 builder.Services.AddHostedService<WebsiteMonitoringWorker>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>

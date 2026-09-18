@@ -94,9 +94,13 @@ namespace PulseWatch.Controllers
         }
 
         [HttpPost("{id}/check")]
-        public async Task<IActionResult> CheckWebsite(int id)
+        public async Task<IActionResult> CheckWebsite(
+            int id,
+            CancellationToken cancellationToken)
         {
-            var result = await _monitorService.CheckWebsiteAsync(id);
+            var result = await _monitorService.CheckWebsiteAsync(
+                id,
+                cancellationToken);
 
             if (result == null)
             {

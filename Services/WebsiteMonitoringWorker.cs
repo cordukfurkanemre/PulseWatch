@@ -35,16 +35,39 @@ public class WebsiteMonitoringWorker : BackgroundService
 
             foreach (var website in websites)
             {
-                await monitorService.CheckWebsiteAsync(website.Id);
+                try
+                {
+                    await monitorService.CheckWebsiteAsync(
+                        website.Id,
+                        stoppingToken);
 
-                _logger.LogInformation(
-                    "{Website} kontrol edildi.",
-                    website.Name);
+                    _logger.LogInformation(
+                        "{Website} kontrol edildi.",
+                        website.Name);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    return;
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogError(
+                        exception,
+                        "{Website} kontrolü beklenmeyen bir hatayla tamamlanamadı.",
+                        website.Name);
+                }
             }
 
-            await Task.Delay(
-                TimeSpan.FromSeconds(30),
-                stoppingToken);
+            try
+            {
+                await Task.Delay(
+                    TimeSpan.FromSeconds(30),
+                    stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                return;
+            }
         }
     }
 }
