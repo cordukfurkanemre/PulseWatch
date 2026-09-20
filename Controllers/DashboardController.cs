@@ -54,4 +54,57 @@ public class DashboardController : ControllerBase
             averageUptime
         });
     }
+
+    [HttpGet("sites")]
+    public async Task<IActionResult> GetSites(CancellationToken cancellationToken)
+    {
+        var sites = await _context.Websites
+            .AsNoTracking()
+            .Select(website => new
+            {
+                website.Id,
+                website.Name,
+                website.Url,
+
+                LatestCheck = website.HealthChecks
+                    .OrderByDescending(check => check.CheckedAtUtc)
+                    .Select(check => new
+                    {
+                        check.IsSuccessful,
+                        check.StatusCode,
+                        check.ResponseTimeMs,
+                        check.CheckedAtUtc
+                    })
+                    .FirstOrDefault(),
+
+                TotalChecks = website.HealthChecks.Count,
+
+                SuccessfulChecks = website.HealthChecks
+                    .Count(check => check.IsSuccessful)
+            })
+            .ToListAsync(cancellationToken);
+
+        var result = sites.Select(site => new
+        {
+            site.Id,
+            site.Name,
+            site.Url,
+
+            IsOnline = site.LatestCheck?.IsSuccessful ?? false,
+
+            StatusCode = site.LatestCheck?.StatusCode,
+
+            ResponseTimeMs = site.LatestCheck?.ResponseTimeMs,
+
+            LastCheckedAtUtc = site.LatestCheck?.CheckedAtUtc,
+
+            Uptime = site.TotalChecks == 0
+                ? 0
+                : Math.Round(
+                    (double)site.SuccessfulChecks / site.TotalChecks * 100,
+                    2)
+        });
+
+        return Ok(result);
+    }
 }
