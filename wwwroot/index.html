@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#0a0e14">
+    <title>PulseWatch — Monitoring Dashboard</title>
+    <meta name="description" content="PulseWatch website monitoring dashboard">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <script src="/js/dashboard.js" defer></script>
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <a class="brand" href="/" aria-label="PulseWatch dashboard home">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 32 32" focusable="false">
+                        <path d="M4 17h6l2.6-7 5 14 3.1-9H28" />
+                    </svg>
+                </span>
+                <span>Pulse<span class="brand-accent">Watch</span></span>
+            </a>
+
+            <div class="system-state" id="system-state" role="status" aria-live="polite">
+                <span class="status-dot" aria-hidden="true"></span>
+                <span id="system-state-text">Connecting</span>
+            </div>
+        </header>
+
+        <main>
+            <section class="hero" aria-labelledby="page-title">
+                <div>
+                    <p class="eyebrow">OVERVIEW</p>
+                    <h1 id="page-title">Website Monitoring Dashboard</h1>
+                    <p class="hero-copy">Live availability, response time, and uptime across your monitored services.</p>
+                </div>
+
+                <div class="refresh-panel">
+                    <span class="last-updated" id="last-updated">Not updated yet</span>
+                    <button class="refresh-button" id="refresh-button" type="button">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M20 11a8 8 0 1 0-2.34 5.66M20 5v6h-6" />
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+            </section>
+
+            <div class="error-banner" id="error-banner" role="alert" hidden>
+                <div>
+                    <strong>Some monitoring data could not be loaded.</strong>
+                    <span id="error-message">We will try again automatically.</span>
+                </div>
+                <button type="button" id="error-retry">Try again</button>
+            </div>
+
+            <section class="summary-grid" aria-label="Monitoring summary">
+                <article class="summary-card">
+                    <div class="card-heading">
+                        <span>Total Sites</span>
+                        <span class="metric-icon neutral" aria-hidden="true">#</span>
+                    </div>
+                    <strong class="metric-value loading-value" id="total-sites">—</strong>
+                    <span class="metric-caption">Configured monitors</span>
+                </article>
+
+                <article class="summary-card">
+                    <div class="card-heading">
+                        <span>Online</span>
+                        <span class="metric-icon online" aria-hidden="true">✓</span>
+                    </div>
+                    <strong class="metric-value loading-value" id="online-sites">—</strong>
+                    <span class="metric-caption">Responding normally</span>
+                </article>
+
+                <article class="summary-card">
+                    <div class="card-heading">
+                        <span>Offline</span>
+                        <span class="metric-icon offline" aria-hidden="true">!</span>
+                    </div>
+                    <strong class="metric-value loading-value" id="offline-sites">—</strong>
+                    <span class="metric-caption">Require attention</span>
+                </article>
+
+                <article class="summary-card">
+                    <div class="card-heading">
+                        <span>Average Uptime</span>
+                        <span class="metric-icon uptime" aria-hidden="true">%</span>
+                    </div>
+                    <strong class="metric-value loading-value" id="average-uptime">—</strong>
+                    <span class="metric-caption">Across monitored sites</span>
+                </article>
+            </section>
+
+            <section class="sites-section" aria-labelledby="sites-title">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">MONITORS</p>
+                        <h2 id="sites-title">Monitored Websites</h2>
+                    </div>
+                    <span class="auto-refresh">Auto-refreshes every 30 seconds</span>
+                </div>
+
+                <div class="sites-container">
+                    <div class="sites-header" aria-hidden="true">
+                        <span>Website</span>
+                        <span>Status</span>
+                        <span>HTTP</span>
+                        <span>Response</span>
+                        <span>Uptime</span>
+                        <span>Last checked</span>
+                    </div>
+
+                    <div id="sites-list" aria-live="polite" aria-busy="true">
+                        <div class="loading-state">
+                            <span class="spinner" aria-hidden="true"></span>
+                            <span>Loading monitors…</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <span>PulseWatch Monitoring</span>
+            <span>Live status data from your API</span>
+        </footer>
+    </div>
+</body>
+</html>
