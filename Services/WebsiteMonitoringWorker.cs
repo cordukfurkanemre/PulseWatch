@@ -4,6 +4,8 @@ namespace PulseWatch.Services;
 
 public class WebsiteMonitoringWorker : BackgroundService
 {
+    private static readonly TimeSpan MonitoringInterval = TimeSpan.FromSeconds(30);
+
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<WebsiteMonitoringWorker> _logger;
 
@@ -21,48 +23,61 @@ public class WebsiteMonitoringWorker : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            using var scope = _scopeFactory.CreateScope();
-
-            var monitorService =
-                scope.ServiceProvider.GetRequiredService<WebsiteMonitorService>();
-
-            var websiteService =
-                scope.ServiceProvider.GetRequiredService<PulseWatch.Data.AppDbContext>();
-
-            var websites = await websiteService.Websites
-                .Where(x => x.IsActive)
-                .ToListAsync(stoppingToken); ;
-
-            foreach (var website in websites)
+            try
             {
-                try
-                {
-                    await monitorService.CheckWebsiteAsync(
-                        website.Id,
-                        stoppingToken);
+                await using var queryScope = _scopeFactory.CreateAsyncScope();
+                var context = queryScope.ServiceProvider
+                    .GetRequiredService<PulseWatch.Data.AppDbContext>();
 
-                    _logger.LogInformation(
-                        "{Website} kontrol edildi.",
-                        website.Name);
-                }
-                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                var websites = await context.Websites
+                    .AsNoTracking()
+                    .Where(x => x.IsActive)
+                    .Select(x => new { x.Id, x.Name })
+                    .ToListAsync(stoppingToken);
+
+                foreach (var website in websites)
                 {
-                    return;
+                    try
+                    {
+                        await using var monitorScope = _scopeFactory.CreateAsyncScope();
+                        var monitorService = monitorScope.ServiceProvider
+                            .GetRequiredService<WebsiteMonitorService>();
+
+                        await monitorService.CheckWebsiteAsync(
+                            website.Id,
+                            stoppingToken);
+
+                        _logger.LogInformation(
+                            "{Website} kontrol edildi.",
+                            website.Name);
+                    }
+                    catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                    {
+                        return;
+                    }
+                    catch (Exception exception)
+                    {
+                        _logger.LogError(
+                            exception,
+                            "{Website} kontrolü beklenmeyen bir hatayla tamamlanamadı.",
+                            website.Name);
+                    }
                 }
-                catch (Exception exception)
-                {
-                    _logger.LogError(
-                        exception,
-                        "{Website} kontrolü beklenmeyen bir hatayla tamamlanamadı.",
-                        website.Name);
-                }
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(
+                    exception,
+                    "Monitoring döngüsü veritabanına erişemedi. Bir sonraki döngüde tekrar denenecek.");
             }
 
             try
             {
-                await Task.Delay(
-                    TimeSpan.FromSeconds(30),
-                    stoppingToken);
+                await Task.Delay(MonitoringInterval, stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

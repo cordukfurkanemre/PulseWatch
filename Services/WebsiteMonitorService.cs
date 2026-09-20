@@ -33,6 +33,8 @@ namespace PulseWatch.Services
             }
 
             var stopwatch = Stopwatch.StartNew();
+            HealthCheck healthCheck;
+            string? incidentReason = null;
 
             try
             {
@@ -43,7 +45,7 @@ namespace PulseWatch.Services
 
                 stopwatch.Stop();
 
-                var healthCheck = new HealthCheck
+                healthCheck = new HealthCheck
                 {
                     WebsiteId = website.Id,
                     StatusCode = (int)response.StatusCode,
@@ -52,23 +54,10 @@ namespace PulseWatch.Services
                     IsSuccessful = response.IsSuccessStatusCode
                 };
 
-                _context.HealthChecks.Add(healthCheck);
-
                 if (!response.IsSuccessStatusCode)
                 {
-                    await OpenIncidentIfNeeded(
-                        website.Id,
-                        $"HTTP {(int)response.StatusCode}"
-                    );
+                    incidentReason = $"HTTP {(int)response.StatusCode}";
                 }
-                else
-                {
-                    await ResolveIncidentIfNeeded(website.Id);
-                }
-
-                await _context.SaveChangesAsync(cancellationToken);
-
-                return healthCheck;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -83,7 +72,7 @@ namespace PulseWatch.Services
                     "{Website} kontrol edilirken bağlantı hatası oluştu.",
                     website.Name);
 
-                var healthCheck = new HealthCheck
+                healthCheck = new HealthCheck
                 {
                     WebsiteId = website.Id,
                     StatusCode = 0,
@@ -92,25 +81,38 @@ namespace PulseWatch.Services
                     IsSuccessful = false
                 };
 
-                _context.HealthChecks.Add(healthCheck);
+                incidentReason = "Connection failed";
+            }
 
+            _context.HealthChecks.Add(healthCheck);
+
+            if (incidentReason is not null)
+            {
                 await OpenIncidentIfNeeded(
                     website.Id,
-                    "Connection failed"
-                );
-
-                await _context.SaveChangesAsync(cancellationToken);
-
-                return healthCheck;
+                    incidentReason,
+                    cancellationToken);
             }
+            else
+            {
+                await ResolveIncidentIfNeeded(website.Id, cancellationToken);
+            }
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            return healthCheck;
         }
 
-        private async Task OpenIncidentIfNeeded(int websiteId, string reason)
+        private async Task OpenIncidentIfNeeded(
+            int websiteId,
+            string reason,
+            CancellationToken cancellationToken)
         {
             var openIncident = await _context.Incidents
                 .FirstOrDefaultAsync(x =>
                     x.WebsiteId == websiteId &&
-                    !x.IsResolved);
+                    !x.IsResolved,
+                    cancellationToken);
 
             if (openIncident != null)
             {
@@ -128,12 +130,15 @@ namespace PulseWatch.Services
             _context.Incidents.Add(incident);
         }
 
-        private async Task ResolveIncidentIfNeeded(int websiteId)
+        private async Task ResolveIncidentIfNeeded(
+            int websiteId,
+            CancellationToken cancellationToken)
         {
             var openIncident = await _context.Incidents
                 .FirstOrDefaultAsync(x =>
                     x.WebsiteId == websiteId &&
-                    !x.IsResolved);
+                    !x.IsResolved,
+                    cancellationToken);
 
             if (openIncident == null)
             {
