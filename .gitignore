@@ -3,8 +3,28 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
-# dotenv files
+# Local secrets and environment-specific credentials
 .env
+.env.*
+!.env.example
+secrets.json
+credentials.json
+credentials.*.json
+[Aa]ppsettings.[Ll]ocal.json
+[Aa]ppsettings.*.[Ll]ocal.json
+[Aa]ppsettings.[Ss]ecrets.json
+.secrets/
+secrets/
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+id_rsa
+id_ed25519
 
 # User-specific files
 *.rsuser
