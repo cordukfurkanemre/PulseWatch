@@ -107,4 +107,38 @@ public class DashboardController : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpGet("sites/{id:int}/response-times")]
+    public async Task<IActionResult> GetResponseTimes(
+        int id,
+        [FromQuery] int limit = 30,
+        CancellationToken cancellationToken = default)
+    {
+        var websiteExists = await _context.Websites
+            .AsNoTracking()
+            .AnyAsync(website => website.Id == id, cancellationToken);
+
+        if (!websiteExists)
+        {
+            return NotFound();
+        }
+
+        var boundedLimit = Math.Clamp(limit, 1, 100);
+
+        var responseTimes = await _context.HealthChecks
+            .AsNoTracking()
+            .Where(check => check.WebsiteId == id)
+            .OrderByDescending(check => check.CheckedAtUtc)
+            .Take(boundedLimit)
+            .Select(check => new
+            {
+                check.ResponseTimeMs,
+                check.CheckedAtUtc
+            })
+            .ToListAsync(cancellationToken);
+
+        responseTimes.Reverse();
+
+        return Ok(responseTimes);
+    }
 }

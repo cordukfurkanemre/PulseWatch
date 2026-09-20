@@ -93,6 +93,43 @@
                 </article>
             </section>
 
+            <section class="response-section" aria-labelledby="response-title">
+                <div class="section-heading response-heading">
+                    <div>
+                        <p class="eyebrow">PERFORMANCE</p>
+                        <h2 id="response-title">Response Time</h2>
+                    </div>
+
+                    <label class="site-selector">
+                        <span>Website</span>
+                        <select id="response-site-select" disabled aria-label="Select website for response time chart">
+                            <option>Loading websites…</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-summary" aria-live="polite">
+                        <div>
+                            <span>Latest</span>
+                            <strong id="response-latest">—</strong>
+                        </div>
+                        <div>
+                            <span>Average</span>
+                            <strong id="response-average">—</strong>
+                        </div>
+                        <span class="chart-range">Last 30 checks</span>
+                    </div>
+
+                    <div class="chart-stage" id="response-chart" aria-live="polite" aria-busy="true">
+                        <div class="chart-state">
+                            <span class="spinner" aria-hidden="true"></span>
+                            <span>Loading response times…</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <section class="sites-section" aria-labelledby="sites-title">
                 <div class="section-heading">
                     <div>
